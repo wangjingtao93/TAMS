@@ -1,0 +1,249 @@
+# alg
+maml:
+  n_inner: 3
+  # outer_lr: 0.001
+  # inner_lr: 0.01
+  outer_lr: 0.00001
+  inner_lr: 0.01
+  n_epoch: 100
+reptile:
+  n_inner: 5
+  outer_lr: 0.001
+  inner_lr: 0.01
+  n_epoch: 100
+imaml:
+  n_inner: 50
+  outer_lr: 0.00001
+  inner_lr: 0.00001
+  n_epoch: 100
+dl:
+  n_inner: 25 # 未使用
+  outer_lr: 0.0001 # 未使用
+  inner_lr: 0.0001 # 未使用
+  n_epoch: 100
+pretrain:
+  n_inner: 25 # 未使用
+  outer_lr: 0.0001 # 未使用
+  inner_lr: 0.0001 # 未使用
+  n_epoch: 100
+predict/dl:
+  n_inner: 25 # 未使用
+  outer_lr: 0.00001 # 未使用
+  inner_lr: 0.00001 # 未使用
+  n_epoch: 100 # 未使用
+
+predict/itams:
+  n_inner: 25 # 未使用
+  outer_lr: 0.00001 # 未使用
+  inner_lr: 0.00001 # 未使用
+  n_epoch: 100
+
+predict/mtams:
+  n_inner: 25 # 未使用
+  outer_lr: 0.00001 # 未使用
+  inner_lr: 0.00001 # 未使用
+  n_epoch: 100
+
+# datatype
+bv1000-oct-cnv:
+  n_channels: 1
+  real_data_csv: "data/bv1000/real_data/cnv/all_data.csv"
+  synthetic_data_csv: "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/bv1000-oct-cnv/2024-04-27-23-11-09/sys.csv"
+  train_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  val_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  test_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/test.csv"
+  meta_learner_load: 
+    0: '2024-04-29-18-29-42'
+    1: '2024-04-29-18-30-15'
+    2: '2024-04-29-18-30-31'
+    3: '2024-04-29-18-31-12'
+  # meta_test_imaml_load: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/imaml/unet/3_fold/2024-05-09-15-59-13/save_meta_pth/meta_epoch_6.pth'
+heshi-rp:
+  n_channels: 3
+  real_data_csv: "data/hsyk_fundus_rp/real_data/all_real_data.csv"
+  synthetic_data_csv: "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/heshi-rp/2024-04-26-11-29-50/sys.csv"
+  train_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  val_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  test_csv: "data/hsyk_fundus_rp/real_data/test.csv"
+  meta_learner_load: 
+    0: '2024-04-28-18-51-05'
+    1: '2024-04-28-21-11-23'
+    2: '2024-04-28-21-12-05'
+    3: '2024-04-28-21-12-32'
+rips:
+  n_channels: 3
+  real_data_csv: "data/rips_fundus_rp/real_data/all_data.csv"
+  synthetic_data_csv: "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/rips/2024-04-28-16-05-53/sys.csv"
+  train_csv: "data/rips_fundus_rp/real_data/multi_tasks"
+  val_csv: "data/rips_fundus_rp/real_data/multi_tasks"
+  test_csv: "data/rips_fundus_rp/real_data/multi_tasks"
+  meta_learner_load: 
+    0: '2024-04-28-21-16-43'
+    1: '2024-04-28-21-17-27'
+    2: '2024-04-28-21-18-08'
+    3: '2024-04-28-21-18-38'
+drive-eye:
+  n_channels: 3
+  real_data_csv: ""
+  synthetic_data_csv: ""
+  train_csv: "data/drive_eye/data.csv"
+  val_csv: "data/drive_eye/data.csv"
+  test_csv: "data/drive_eye/data.csv"
+
+fs1000/bv1000-oct-cnv:
+  n_channels: 1
+  real_data_csv: "data/bv1000/real_data/cnv/all_data.csv"
+  synthetic_data_csv: "data/fs1000/fs1000.csv"
+  train_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  val_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  test_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/test.csv"
+  meta_learner_load: 
+    0: ''
+    1: ''
+    2: ''
+    3: ''
+
+fs1000/heshi-rp:
+  n_channels: 3
+  real_data_csv: "data/hsyk_fundus_rp/real_data/all_real_data.csv"
+  synthetic_data_csv: "data/fs1000/fs1000.csv"
+  train_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  val_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  test_csv: "data/hsyk_fundus_rp/real_data/test.csv"
+  meta_learner_load: 
+    0: ''
+    1: ''
+    2: ''
+    3: ''
+polyp/bv1000-oct-cnv:
+  n_channels: 1
+  real_data_csv: "data/bv1000/real_data/cnv/all_data.csv"
+  synthetic_data_csv: "data/polyp/polyp.csv"
+  train_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  val_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/multi_tasks"
+  test_csv: "data/bv1000/real_data/cnv/acc_eyes/linux/test.csv"
+  meta_learner_load: 
+    0: ''
+    1: ''
+    2: ''
+    3: ''
+polyp/heshi-rp:
+  n_channels: 3
+  real_data_csv: "data/hsyk_fundus_rp/real_data/all_real_data.csv"
+  synthetic_data_csv: "data/polyp/polyp.csv"
+  train_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  val_csv: "data/hsyk_fundus_rp/real_data/multi_tasks"
+  test_csv: "data/hsyk_fundus_rp/real_data/test.csv"
+  meta_learner_load: 
+    0: ''
+    1: ''
+    2: ''
+    3: ''
+
+load_dict:
+  meta_test_itams:
+    bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/imaml/unet/3_fold/2024-05-09-15-59-13/save_meta_pth/meta_epoch_6.pth'
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+  meta_test_mtams:
+    bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/maml/unet/3_fold/2024-05-17-00-20-02/save_meta_pth/meta_epoch_17.pth'
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+  predict/dl:
+    bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/dl/unet/3_fold/2024-04-10-12-35-42/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_0.pth'
+    # 0.3 percent
+    # bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/percent/0.3/dl/unet/3_fold/2024-06-03-14-21-39/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_0.pth'
+    
+    heshi-rp: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/heshi-rp/dl/unet/2_fold/2024-04-10-20-58-00/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_0.pth'
+    rips: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/rips/dl/unet/2_fold/2024-04-10-13-58-17/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_0.pth'
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+  predict/itams:
+    bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/imaml/unet/3_fold/2024-05-09-15-59-13/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_6.pth'
+    # 0.3 percent
+    # bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/percent/0.3/meta_test_imaml/unet/3_fold/2024-06-04-09-43-26/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_6.pth'
+    heshi-rp: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/heshi-rp/imaml/unet/2_fold/2024-05-09-16-02-46/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_6.pth'
+    rips: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/rips/imaml/unet/2_fold/2024-05-30-08-58-46/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_1.pth'
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+  predict/mtams:
+    bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/maml/unet/3_fold/2024-05-17-00-20-02/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_17.pth'
+    # 0.3 percent 
+    # bv1000-oct-cnv: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/bv1000-oct-cnv/percent/0.3/meta_test_maml/unet/3_fold/2024-06-04-09-43-52/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_17.pth'
+    heshi-rp: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/heshi-rp/maml/unet/2_fold/2024-05-09-16-03-24/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_12.pth'
+    rips: '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/rips/maml/unet/2_fold/2024-05-17-00-12-01/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_8.pth'
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+  pretrain:
+    bv1000-oct-cnv: ''
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+  imaml:
+    bv1000-oct-cnv: ''
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+  maml:
+    bv1000-oct-cnv: ''
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+  reptile:
+    bv1000-oct-cnv: ''
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+  predict:
+    bv1000-oct-cnv: ''
+    heshi-rp: ''
+    rips: ''
+    drive-eye: ''
+    fs1000/bv1000-oct-cnv: ''
+    fs1000/heshi-rp: ''
+    polyp/bv1000-oct-cnv: ''
+    polyp/heshi-rp: ''
+
+
+
+

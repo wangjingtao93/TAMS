@@ -1,0 +1,23 @@
+# datatype
+demo-bv1000-oct-cnv:
+  real_data_csv: "data/bv1000/real_data/cnv/demo_for_aug.csv"
+  normal_data_csv: "data/bv1000/real_data/cnv/demo_without_cnv.csv"
+  label_text_path: "data/bv1000/all_disease/check_kuang.txt"
+  
+bv1000-oct-cnv:
+  real_data_csv: "data/bv1000/real_data/cnv/all_data.csv"
+  normal_data_csv: "data/bv1000/all_disease/train_data.csv"
+  label_text_path: "data/bv1000/all_disease/check_kuang.txt"
+
+heshi-rp:
+  real_data_csv: "data/hsyk_fundus_rp/real_data/all_real_data.csv"
+  normal_data_csv: ""
+  label_text_path: ""
+rips:
+  #real_data_csv: "data/rips_fundus_rp/real_data/all_data.csv"
+  real_data_csv: "data/rips_fundus_rp/real_data/for_aug_demo.csv"
+  normal_data_csv: ""
+  label_text_path: ""
+
+
+
