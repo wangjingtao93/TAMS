@@ -1,0 +1,14 @@
+{
+  "is_run_command": false,
+  "is_debug": false,
+  "is_remove_exres": true,
+  "base_agu": false,
+  "project_path": "/data1/wangjingtao/workplace/python/pycharm_remote/meta-learning-segmentation",
+  "real_data_csv": "data/bv1000/real_data/cnv/demo_for_aug.csv",
+  "normal_data_csv": "data/bv1000/real_data/cnv/demo_without_cnv.csv",
+  "save_path": "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/demo",
+  "label_text_path": "data/bv1000/all_disease/check_kuang.txt",
+  "datatype": "demo-bv1000-oct-cnv",
+  "expand_n": 10,
+  "store_dir": "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/demo/demo-bv1000-oct-cnv/2024-07-09-11-54-59"
+}

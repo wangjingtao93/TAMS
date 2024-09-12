@@ -1,0 +1,8 @@
+{
+  "project_path": "/data1/wangjingtao/workplace/python/pycharm_remote/meta-learning-segmentation",
+  "real_data_csv": "task_agu/data/bv1000-oct-cnv/for_demo/real_cnv.csv",
+  "normal_data_csv": "task_agu/data/bv1000-oct-cnv/for_demo/without_cnv.csv",
+  "store_dir": "/data1/wangjingtao/workplace/python/pycharm_remote/meta-learning-segmentation/task_agu/data/bv1000-oct-cnv/for_demo/result/demo-bv1000-oct-cnv",
+  "label_text_path": "data/bv1000_ocv_cnv/all_disease/check_kuang.txt",
+  "datatype": "demo-bv1000-oct-cnv"
+}

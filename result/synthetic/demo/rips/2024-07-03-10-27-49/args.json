@@ -1,0 +1,14 @@
+{
+  "is_run_command": false,
+  "is_debug": false,
+  "is_remove_exres": true,
+  "base_agu": false,
+  "project_path": "/data1/wangjingtao/workplace/python/pycharm_remote/meta-learning-segmentation",
+  "real_data_csv": "data/rips_fundus_rp/real_data/for_aug_demo.csv",
+  "normal_data_csv": "",
+  "save_path": "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/demo",
+  "label_text_path": "",
+  "datatype": "rips",
+  "expand_n": 10,
+  "store_dir": "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/task_aug/result_sys/20240419/demo/rips/2024-07-03-10-27-49"
+}
