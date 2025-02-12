@@ -39,9 +39,9 @@ class upsample(nn.Module):
 
 
 # 256*256
-class lesionD_256(nn.Module):
+class pix2pixD_256(nn.Module):
     def __init__(self):
-        super(lesionD_256, self).__init__()
+        super(pix2pixD_256, self).__init__()
 
         # 定义基本的卷积\bn\relu
         def base_Conv_bn_lkrl(in_channels, out_channels, stride):
@@ -75,7 +75,7 @@ class lesion_G_256(nn.Module):
         super(lesion_G_256, self).__init__()
         # down sample
         self.trans_part = MAE_Feature()
-        
+
         self.down_1 = nn.Conv2d(3, 64, 4, 2, 1)  # [batch,3,256,256]=>[batch,64,128,128]
         self.tcu_1 = ToC(196, 64, 128)
         for i in range(7):
@@ -260,7 +260,7 @@ class ToC(nn.Module):
         x_r = x[:, 1:].transpose(1, 2).reshape(B, C, H, W)
         x_r = self.act(self.bn(self.conv_project(x_r)))
         x_r = self.drop(x_r)
-        
+
 
         return F.interpolate(x_r, size=(H * self.up_stride, W * self.up_stride))
 
@@ -272,7 +272,7 @@ class ToC(nn.Module):
         x_r = self.act(self.bn(self.conv_project(x_r)))
 
         return F.interpolate(x_r, size=(self.resize, self.resize))
-    
+
     # 用196 reshape
     def forward_196(self, x):
         B, _, C = x.shape

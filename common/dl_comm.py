@@ -6,14 +6,33 @@ import torch.nn as nn
 import torch.nn.functional as F
 import cv2
 import torchvision
-import segmentation_models_pytorch as seg
 
+import segmentation_models_pytorch as seg
+from timm.models.layers import trunc_normal_
 from tqdm import tqdm
 from copy import deepcopy
+from monai.networks.nets import SwinUNETR
+from model.MobileSam.mobile_sam import sam_model_registry as mobile_sam_registry
+from model.MobileSam.moblesam import SemanticSAM
+from model.MedSam.segment_anything import sam_model_registry as medsam_registry
+from model.MedSam.medsam import MedSAM
+from model.SwinUNETR.networks.vision_transformer import SwinUnet
 # from miseval import evaluate as mis_evl
 # from net.Att_Unet import Att_Unet
 from model.unet import UNet
 from model.transUNet.networks.get_trans_net import get_trans
+import model.retf.models_vit as  models_vit
+from model.retf.retfound_seg_model import RETFound_Seg
+from model.retf.util.pos_embed import interpolate_pos_embed
+
+import clip
+from model.clip.clip_seg_model import ModifiedMedSAMDecoder
+
+# MedSam-lite
+from model.LitleMedSam.tiny_vit_sam import TinyViT
+from model.LitleMedSam.MedSam_Litle import MedSAM_Lite
+from model.LitleMedSam.segment_anything.modeling import MaskDecoder, PromptEncoder, TwoWayTransformer
+
 from common.evl.dice_score import dice_loss, multiclass_dice_coeff, dice_coeff
 from common.evl.evaluate import evaluate,test_evl, dice_one_batch
 import common.evl.metrics as smp
@@ -30,15 +49,13 @@ class dl_comm():
         self._init_net()
         self._init_opt()
         self._init_criterion()
-        
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # record mid_dl epcoh best_pred
         self.mid_dl_epoch_best_pred = 0.0
         self.mid_dl_epoch_best_epoch = 0
-
-
+        
 
     def _init_net(self):
-
         if self.args.net == 'unet':
             self.get_unet()
 
@@ -58,20 +75,156 @@ class dl_comm():
             )
         elif self.args.net == 'transUNet':
             self.net = get_trans(self.args)
-        
+
+        elif self.args.net =='swinunetr':
+             self.net = SwinUNETR(
+                img_size=(self.args.dl_resize, self.args.dl_resize),
+                in_channels=self.args.n_channels,
+                out_channels=self.args.n_classes,
+                # feature_size=48,
+                # use_checkpoint=args.use_checkpoint,
+                spatial_dims=2
+            )
+        elif self.args.net =='clip':
+            self.net, preprocess = clip.load('ViT-B/32', self.device)
+            self.encoder = ModifiedMedSAMDecoder()
+
+        elif self.args.net =='mobilesam':
+             sam_checkpoints_t = "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/weights/mobilesam/mobile_sam.pt"
+             model_type_t = "vit_t"
+             sam = mobile_sam_registry[model_type_t](sam_checkpoints_t)
+             self.net = SemanticSAM(
+                image_encoder=sam.image_encoder,
+                mask_decoder=sam.mask_decoder,
+                prompt_encoder=sam.prompt_encoder
+            )
+        elif self.args.net == 'medsam':
+            model_type_t = "vit_b"
+            sam_checkpoints_t = "/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/weights/medsam/medsam_vit_b.pth"
+            sam = medsam_registry[model_type_t](checkpoint=sam_checkpoints_t)
+            self.net = MedSAM(
+                image_encoder=sam.image_encoder,
+                mask_decoder=sam.mask_decoder,
+                prompt_encoder=sam.prompt_encoder,
+                )
+        elif self.args.net == 'retfound_seg':
+            encoder = models_vit.__dict__['vit_large_patch16'](
+                img_size=224,
+                num_classes=5,
+                drop_path_rate=0,
+                global_pool=True,
+            )
+            cfp_name = ['heshi-rp', 'rips']
+            if self.args.datatype=='bv1000-oct-cnv':
+                # chkpt_dir = '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/model/retf/result/checkpoints/RETFound_oct_weights.pth'
+                # 在合成数据集上mae训练
+                chkpt_dir = '/data1/wangjingtao/workplace/python/pycharm_remote/compare_methods/RETFound_MAE-main/output_dir/checkpoint-399.pth'
+            elif self.args.datatype in cfp_name:
+                # chkpt_dir = '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/model/retf/result/checkpoints/RETFound_cfp_weights.pth'
+                # 在合成数据集上mae训练
+                chkpt_dir = '/data1/wangjingtao/workplace/python/pycharm_remote/compare_methods/RETFound_MAE-main/output_dir/checkpoint-399.pth'
+            checkpoint = torch.load(chkpt_dir, map_location='cpu')
+
+            checkpoint_encoder = checkpoint['model']
+            state_dict = encoder.state_dict()
+            for k in ['head.weight', 'head.bias']:
+                if k in checkpoint_encoder and checkpoint_encoder[k].shape != state_dict[k].shape:
+                    print(f"Removing key {k} from pretrained checkpoint")
+                    del checkpoint_encoder[k]
+
+            # interpolate position embedding
+            interpolate_pos_embed(encoder, checkpoint_encoder)
+
+            # load pre-trained model
+            msg = encoder.load_state_dict(checkpoint_encoder, strict=False)
+            # print(msg)
+
+            # if args.global_pool:
+            assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
+            # else:
+            #     assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
+
+            # manually initialize fc layer
+            trunc_normal_(encoder.head.weight, std=2e-5)
+
+            self.net = RETFound_Seg(
+                image_encoder=encoder,
+                )
+
+            self.net.load_state_dict(torch.load('/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/result/result_20240408/heshi-rp/pretrain/retfound_seg/2_fold/2024-12-10-15-05-12/meta_epoch/taskid_0/best_epoch_for_val_meta_epoch_0.pth'))
+
+        elif self.args.net == 'medsam_lite':
+            medsam_lite_image_encoder = TinyViT(
+                                            img_size=256,
+                                            in_chans=3,
+                                            embed_dims=[
+                                                64, ## (64, 256, 256)
+                                                128, ## (128, 128, 128)
+                                                160, ## (160, 64, 64)
+                                                320 ## (320, 64, 64)
+                                            ],
+                                            depths=[2, 2, 6, 2],
+                                            num_heads=[2, 4, 5, 10],
+                                            window_sizes=[7, 7, 14, 7],
+                                            mlp_ratio=4.,
+                                            drop_rate=0.,
+                                            drop_path_rate=0.0,
+                                            use_checkpoint=False,
+                                            mbconv_expand_ratio=4.0,
+                                            local_conv_size=3,
+                                            layer_lr_decay=0.8
+                                            )
+
+            medsam_lite_mask_decoder = MaskDecoder(
+                                            num_multimask_outputs=3,
+                                                transformer=TwoWayTransformer(
+                                                    depth=2,
+                                                    embedding_dim=256,
+                                                    mlp_dim=2048,
+                                                    num_heads=8,
+                                                ),
+                                                transformer_dim=256,
+                                                iou_head_depth=3,
+                                                iou_head_hidden_dim=256,
+                                        )
+
+            medsam_lite_prompt_encoder = PromptEncoder(
+                                            embed_dim=256,
+                                            image_embedding_size=(64, 64),
+                                            input_image_size=(256, 256),
+                                            mask_in_chans=16
+                                        )
+            self.net = MedSAM_Lite(
+                image_encoder = medsam_lite_image_encoder,
+                mask_decoder = medsam_lite_mask_decoder,
+                prompt_encoder = medsam_lite_prompt_encoder
+                )
+            medsam_lite_checkpoint = '/data1/wangjingtao/workplace/python/pycharm_remote/result/meta-learning-segmentation/weights/medsam_lite/lite_medsam.pth'
+            medsam_lite_ckpt = torch.load(medsam_lite_checkpoint, map_location="cpu")
+            self.net.load_state_dict(medsam_lite_ckpt, strict=True)
+
         else:
             raise ValueError('Not implemented Net type')
-    
-        
+
+
         self.net.train()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
         self.net.to(self.device)
 
         return None
 
     def _init_opt(self):
         self.modellrnew = self.args.dl_lr
-        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=self.args.dl_lr, momentum=0.9, weight_decay=1e-4)
+        # if self.args.net == 'mobilesam':
+        if self.args.net == 'others':
+            self.optimizer = torch.optim.RMSprop(
+            list(self.net.image_encoder.parameters()) + list(self.net.mask_decoder.parameters()),
+            lr=0.0001,
+            eps=1e-08,
+            weight_decay=0,
+            momentum=0.9)
+        else:
+            self.optimizer = torch.optim.SGD(self.net.parameters(), lr=self.args.dl_lr, momentum=0.9, weight_decay=1e-4)
 
     def _init_criterion(self):
         # if self.args.n_classes == 1:
@@ -83,7 +236,7 @@ class dl_comm():
 
     def get_unet(self):
         self.net = UNet(n_channels=self.args.n_channels, n_classes=self.args.n_classes, bilinear=True)
-        if self.args.load != '':
+        if os.path.isfile(self.args.load):
             self.net.load_state_dict(torch.load(self.args.load))
             print(f'++++++++++load {self.args.load}---------')
 
@@ -107,15 +260,15 @@ class dl_comm():
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                
+
                 sum_loss += loss.item()
 
                 pbar.update(1)
                 self.global_step += 1
-                pbar.set_postfix(**{'loss (batch)': loss.item()}) 
-                division_step = (n_train // self.args.n_mid_val) # every division step, evaluation 
+                pbar.set_postfix(**{'loss (batch)': loss.item()})
+                division_step = (n_train // self.args.n_mid_val) # every division step, evaluation
                 # if division_step > 0:
-                
+
                 if self.global_step % division_step == 0 and self.args.is_mid_val:
                     res_val = self.val(epoch, val_loader)
                     train_score = csdn_metric.dice_coef(output, mask)
@@ -145,7 +298,7 @@ class dl_comm():
         res['val_dice_mid_epoch'] = val_dice_ls
         res['best_epoch_mid'] = self.mid_dl_epoch_best_epoch
         res['mid_dl_epoch_best_pred'] = self.mid_dl_epoch_best_pred
-        
+
         return res
 
     def val(self, epoch, val_loader):
@@ -162,7 +315,7 @@ class dl_comm():
         res = {}
 
         for batch in tqdm(val_loader, total=n_val_batches, desc=f'Epoch {epoch}/{self.args.n_epoch}, lr {self.modellrnew}', unit='batch', leave=False):
-            
+
             image, mask = batch['image'], batch['mask']
             image = image.to(device=self.device, dtype=torch.float32)
             mask = mask.to(device=self.device, dtype=torch.long)
@@ -180,7 +333,7 @@ class dl_comm():
                 recall += res_smp['recall']
                 precision += res_smp['precision']
 
-         
+
 
                 # # iou_score_1 += calculate_metrics(output[0,0,...], target[0,0,...], 'iou')
                 # iou_score_1 += mis_evl(target, (torch.sigmoid(output) > 0.5).float(), metric="IoU")
@@ -191,8 +344,62 @@ class dl_comm():
                 # precision_1 += calculate_metrics(output, target, 'precision')
                 # # val_score_1 += calculate_metrics(output, target, 'dice_coefficient')
                 # val_score_1 += mis_evl(target, (torch.sigmoid(output) > 0.5).float(), metric="DSC")
-                
-                
+
+        res['val_dice'] = round((val_score / n_val_batches).item(), 5)
+        res['val_iou'] = round((iou_score / n_val_batches).item(), 5)
+        res['accuracy'] = round((accuracy / n_val_batches).item(), 5)
+        res['f1_score'] =  round((f1_score/ n_val_batches).item(), 5)
+        res['recall'] = round((recall / n_val_batches).item(), 5)
+        res['precision'] = round((precision / n_val_batches).item(), 5)
+
+        self.net.train()
+
+        return res
+
+    # for clip
+    def clip_val(self, epoch, val_loader):
+        self.net.eval()
+        # val_score, val_dice_list = test_evl(self.net, val_loader, self.device, flag='val')
+
+        n_val_batches = len(val_loader)
+        val_score = 0.0
+        iou_score = 0.0
+        f1_score = 0.0
+        accuracy = 0.0
+        recall = 0.0
+        precision = 0.0
+        res = {}
+
+        for batch in tqdm(val_loader, total=n_val_batches, desc=f'Epoch {epoch}/{self.args.n_epoch}, lr {self.modellrnew}', unit='batch', leave=False):
+
+            image, mask = batch['image'], batch['mask']
+            image = image.to(device=self.device, dtype=torch.float32)
+            mask = mask.to(device=self.device, dtype=torch.long)
+
+            with torch.no_grad():
+                output = self.net.encode_image(image)
+
+                iou, dice= csdn_metric.iou_score(mask, output)
+                iou_score += iou
+                val_score += dice
+
+                res_smp = self.smp_computer(output, mask)
+                accuracy += res_smp['accuracy']
+                f1_score += res_smp['f1_score']
+                recall += res_smp['recall']
+                precision += res_smp['precision']
+
+
+
+                # # iou_score_1 += calculate_metrics(output[0,0,...], target[0,0,...], 'iou')
+                # iou_score_1 += mis_evl(target, (torch.sigmoid(output) > 0.5).float(), metric="IoU")
+                # f1_score_1 += calculate_metrics(output, target, 'f1')
+                # # accuracy_1 += calculate_metrics(output, target, 'accuracy')
+                # accuracy_1 += mis_evl(np.array(target), np.array((torch.sigmoid(output) > 0.5).float()), metric="ACC")
+                # recall_1 += calculate_metrics(output, target, 'recall')
+                # precision_1 += calculate_metrics(output, target, 'precision')
+                # # val_score_1 += calculate_metrics(output, target, 'dice_coefficient')
+                # val_score_1 += mis_evl(target, (torch.sigmoid(output) > 0.5).float(), metric="DSC")
 
         res['val_dice'] = round((val_score / n_val_batches).item(), 5)
         res['val_iou'] = round((iou_score / n_val_batches).item(), 5)

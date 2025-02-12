@@ -20,6 +20,7 @@ import pandas as pd
 import sys
 import os
 from albumentations.pytorch.transforms import ToTensorV2
+from torchvision.transforms import Resize
 
 class RIPSMetaDataset(Dataset):
     # def __init__(self, imgs_dir, masks_dir, scale=1, data_type='train'):
@@ -32,7 +33,7 @@ class RIPSMetaDataset(Dataset):
             self.relative_path = self.args.synthetic_data_csv.replace('sys.csv', 'imp_net')
         else:
             self.relative_path = self.args.synthetic_data_csv.replace('sys.csv', 'no_imp')
-        
+
         self.transform_train = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             A.HorizontalFlip(p=0.5),
@@ -49,7 +50,7 @@ class RIPSMetaDataset(Dataset):
             #                    always_apply=False, approximate=False, p=0.3),
             ToTensorV2(),
         ])
-        
+
         self.transform_val = A.Compose([
             A.Resize(width=self.args.meta_resize, height=self.args.meta_resize, p=1.0),
             ToTensorV2(),
@@ -67,10 +68,9 @@ class RIPSMetaDataset(Dataset):
             img_path = os.path.join(self.relative_path, each_path[0])
             mask_path = os.path.join(self.relative_path, each_path[1])
 
-           
             image = cv2.imread(img_path)  # [height,width,channel]
             mask = cv2.imread(mask_path, 0)  # [height, width]
-            
+
             augmented = self.transform_val(image=image, mask=mask)
             image = augmented["image"] /255.0 # [c, h, w]
             mask = augmented["mask"] /255 # [h,w]
@@ -122,6 +122,7 @@ class RIPSDataset(Dataset):
             ToTensorV2(),
         ])
 
+        self.resize = Resize((1024, 1024))
 
     def __len__(self):
         return len(self.mask_file)
@@ -144,7 +145,11 @@ class RIPSDataset(Dataset):
 
         image = augmented["image"] /255.0
         mask = augmented["mask"] /255
+
         mask = mask[None]
+
+        # if 'sam' in self.args.net:
+        #     image = self.resize(image)
 
         return {'image': image, 'mask': mask}
 
@@ -159,12 +164,11 @@ def tichu_black(image_l, mask_l):
         if np.sum(arr) != 0:
             new_mask.append(mask_l[i])
             new_image.append(image_l[i])
-        
+
     return new_image, new_mask
 
 def tichu_black_for_patch(dataframe):
     id_arr = np.unique(dataframe['ID'])
-    
     dataframe_new = pd.DataFrame()
     for id in id_arr:
         df_one_picture = dataframe[dataframe['ID'] == id]
@@ -174,7 +178,6 @@ def tichu_black_for_patch(dataframe):
         for mask in mask_l:
             arr = cv2.imread(mask)
             pix_sum += np.sum(arr)
-        
 
         if pix_sum != 0:
             dataframe_new=pd.concat([dataframe_new, df_one_picture], ignore_index=True)

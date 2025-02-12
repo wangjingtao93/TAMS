@@ -1,6 +1,7 @@
 import sys
 sys.path.append('/data1/wangjingtao/workplace/python/pycharm_remote/meta-learning-segmentation')
 
+
 import os
 import time
 import json
@@ -16,36 +17,32 @@ import traceback
 import run as dl_exe
 import yaml
 import torch
-
+import argparse
 
 def main(args):
 
     # organize data
     train_dataloader_ls, val_dataloader_ls, test_data_ls=data_organize.data_organize(args)
-    # train_dataloader_ls, val_dataloader_ls, test_data_ls = [],[],[[],[],[]]
 
-        
     # choose alg
-    if args.alg == 'dl' or args.alg == 'pretrain' or args.alg == 'meta_test_imaml' or args.alg == 'meta_test_maml':
+    if args.alg == 'dl' or args.alg == 'pretrain' or args.alg == 'meta_test_mtams' or args.alg == 'meta_test_itams' or args.alg=='transfer':
         dl_enter(args, test_data_ls)
     elif 'predict' in args.alg:
         predict(args, test_data_ls)
-    elif args.alg == 'imaml':
+    elif args.alg == 'itams':
         imaml_enter(args, train_dataloader_ls, val_dataloader_ls, test_data_ls)
-    elif args.alg == 'maml':
+    elif args.alg == 'mtams':
         maml_enter(args, train_dataloader_ls, val_dataloader_ls, test_data_ls)
     elif args.alg=='FOMAML':
         pass
     else:
         raise ValueError('Not implemented Meta-Learning Algorithm')
-    
+
     print('over+++++++++++++++++++')
 
 def parse_args():
-    import argparse
 
     parser = argparse.ArgumentParser('Gradient-Based Meta-Learning Algorithms')
-    
     # base settings
     parser.add_argument('--is_run_command', type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument('--is_debug', type=lambda x: (str(x).lower() == 'true'), default=False)
@@ -179,12 +176,10 @@ def create_store_dir(args):
 
     args.store_dir =os.path.join(store_dir, args.alg.lower(), args.net, str(args.index_fold) + '_fold', time_name)
     utils.mkdir(args.store_dir)
-    
+
     # 创建一个记录测试任务的
     args.store_meta_test = os.path.join(args.store_dir,'meta_epoch')
     utils.mkdir(args.store_meta_test)
-
-    
 
     # 创建一个说明文件
     description_file = os.path.join(args.store_dir,  args.description_name)
@@ -195,10 +190,11 @@ def create_store_dir(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    
+
     # utils.set_gpu(args.gpu)
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     torch.cuda.set_device(args.gpu[0])
+    print(args.gpu[0])
     utils.set_seed(args.seed)
 
     # args is not deepcopy

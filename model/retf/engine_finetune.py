@@ -142,7 +142,7 @@ def evaluate(data_loader, model, device, task, epoch, mode, num_class):
 
     metric_logger = misc.MetricLogger(delimiter="  ")
     header = 'Test:'
-    
+
     if not os.path.exists(task):
         os.makedirs(task)
 
@@ -150,7 +150,7 @@ def evaluate(data_loader, model, device, task, epoch, mode, num_class):
     prediction_list = []
     true_label_decode_list = []
     true_label_onehot_list = []
-    
+
     # switch to evaluation mode
     model.eval()
 

@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import higher
+from monai.networks.nets import SwinUNETR
 
 from common.meta.gbml import GBML
 from common.evl.dice_score import dice_loss, multiclass_dice_coeff, dice_coeff
@@ -25,10 +26,24 @@ class iMAML(GBML):
 
         self.criterion = BCEDiceLoss()
 
-    @torch.enable_grad()
-    def inner_loop(self, fmodel, diffopt, img, mask, step):
+    # @torch.enable_grad()
+    # def inner_loop(self, fmodel, diffopt, img, mask, step):
+        
+    #     output = fmodel(img)
+    #     inner_loss = self.criterion(output, mask)
+    #     diffopt.step(inner_loss)
 
-        output = fmodel(img)
+    #     # self.writer.add_scalar('inner_loss', inner_loss, step, walltime=None)
+
+    #     return None
+    
+
+    @torch.enable_grad()
+    def inner_loop_transunet(self, fmodel, diffopt, img, mask, step):
+        
+        # output = fmodel(img)
+        output, features = self.net_enc(img)
+        output = fmodel(output, features)
         inner_loss = self.criterion(output, mask)
         diffopt.step(inner_loss)
 
@@ -81,7 +96,7 @@ class iMAML(GBML):
         loss_list = []
 
         for (S_img, S_mask, Q_img, Q_mask) in zip(S_imgs, S_masks, Q_imgs, Q_masks):
-            
+
             with higher.innerloop_ctx(self.net, self.inner_optimizer, track_higher_grads=False) as (
                     fmodel, diffopt):
 
@@ -91,7 +106,7 @@ class iMAML(GBML):
 
                 S_out = fmodel(S_img)
                 in_loss = self.criterion(S_out, S_mask)
-                             
+
                 # query set
                 Q_out = fmodel(Q_img)
                 outer_loss =  self.criterion(Q_out, Q_mask)
@@ -99,7 +114,7 @@ class iMAML(GBML):
 
                 with torch.no_grad():
                     dice_log += csdn_metric.dice_coef(Q_out, Q_mask) / self.meta_size
-                    
+
                 if is_train:
                     params = list(fmodel.parameters(time=-1))
                     in_grad = torch.nn.utils.parameters_to_vector(
@@ -120,7 +135,63 @@ class iMAML(GBML):
             return loss_log, dice_log, grad_log
         else:
             return loss_log, dice_log
-        
+
+    # just for transunet
+    def outer_loop_tranunet(self, batch, is_train):
+        # 一个batch的tasks送进去[meta_size=4, image_batch_size=ways*shot/query, channel, height, weidth]=[4,2*4,1,512,512]
+        S_imgs, S_masks, Q_imgs, Q_masks = self.unpack_batch(batch)
+
+        loss_log = 0
+        dice_log = 0
+        grad_list = []
+        loss_list = []
+
+        for (S_img, S_mask, Q_img, Q_mask) in zip(S_imgs, S_masks, Q_imgs, Q_masks):
+
+            with higher.innerloop_ctx(self.net, self.inner_optimizer, track_higher_grads=False) as (
+                    fmodel, diffopt):
+
+                # support set
+                for step in range(self.args.n_inner):  # n_inner=150
+                    self.inner_loop_transunet(fmodel, diffopt, S_img, S_mask, step)
+
+                # S_out = fmodel(S_img)
+                S_out,features = self.net_enc(S_img)
+                S_out = fmodel(S_out, features)
+                in_loss = self.criterion(S_out, S_mask)
+
+                # query set
+                # Q_out = fmodel(Q_img)
+                Q_out, features = self.net_enc(Q_img)
+                Q_out = fmodel(Q_out, features)
+
+                outer_loss =  self.criterion(Q_out, Q_mask)
+                loss_log += outer_loss.item() / self.meta_size
+
+                with torch.no_grad():
+                    dice_log += csdn_metric.dice_coef(Q_out, Q_mask) / self.meta_size
+
+                if is_train:
+                    params = list(fmodel.parameters(time=-1))
+                    in_grad = torch.nn.utils.parameters_to_vector(
+                        torch.autograd.grad(in_loss, params, create_graph=True))
+                    outer_grad = torch.nn.utils.parameters_to_vector(torch.autograd.grad(outer_loss, params))
+                    implicit_grad = self.cg(in_grad, outer_grad, params)
+                    grad_list.append(implicit_grad)
+                    loss_list.append(outer_loss.item())
+
+        if is_train:
+            self.outer_optimizer.zero_grad()
+            weight = torch.ones(len(grad_list))
+            weight = weight / torch.sum(weight)
+            grad = mix_grad(grad_list, weight)
+            grad_log = apply_grad(self.net, grad)
+            self.outer_optimizer.step()
+
+            return loss_log, dice_log, grad_log
+        else:
+            return loss_log, dice_log
+
 def apply_grad(model, grad):
     '''
     assign gradient to model(nn.Module) instance. return the norm of gradient

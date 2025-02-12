@@ -24,7 +24,7 @@ def predict(args, test_data_ls):
     dl_ob = dl_comm(args)
     for task_idx in range(task_num):
         if args.is_save_fig:
-            
+
             test_loader = final_test_task[task_idx]
 
             save_fig_val(args, dl_ob.net, test_loader)
@@ -36,8 +36,6 @@ def predict(args, test_data_ls):
 
             print(f'task_id {task_idx}, res=' , res_test)
 
-    
-
 
 def save_fig_val(args, net, val_loader):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,9 +45,9 @@ def save_fig_val(args, net, val_loader):
         store_path = os.path.join(args.store_dir,'figure')
         os.mkdir(store_path)
         for batch in tqdm(val_loader, total=n_val_batches, desc=f'val for save fig', unit='batch', leave=False):
-            
+
             image, mask_true = batch['image'], batch['mask']
-            
+
             image = image.to(device=device, dtype=torch.float32)
             mask_true = mask_true.to(device=device, dtype=torch.float32)
 
@@ -60,13 +58,12 @@ def save_fig_val(args, net, val_loader):
                     count += 1
                     store_true = np.asarray(mask_true[batch_idx][0].cpu() * 255)
                     if image[batch_idx].shape[0] > 1:
-                        store_img =  np.asarray(image[batch_idx].permute(1,2,0).cpu()*255.0)                        
+                        store_img =  np.asarray(image[batch_idx].permute(1,2,0).cpu()*255.0)
                     else:
                         store_img =  np.asarray(image[batch_idx][0].cpu()*255.0)
                         store_img = cv2.cvtColor(store_img, cv2.COLOR_GRAY2BGR)
-                   
-                
-                    store_pred = torch.sigmoid(mask_pred) > 0.5  
+
+                    store_pred = torch.sigmoid(mask_pred) > 0.5
                     store_pred = np.asarray(store_pred[batch_idx][0].cpu()*255)
 
                     # store_out = np.concatenate([store_true, store_pred],axis=1)

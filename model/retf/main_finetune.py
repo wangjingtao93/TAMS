@@ -186,7 +186,7 @@ def main(args):
                 dataset_val, num_replicas=num_tasks, rank=global_rank, shuffle=True)  # shuffle=True to reduce monitor bias
         else:
             sampler_val = torch.utils.data.SequentialSampler(dataset_val)
-            
+
         if args.dist_eval:
             if len(dataset_test) % num_tasks != 0:
                 print('Warning: Enabling distributed evaluation with an eval dataset not divisible by process number. '
@@ -196,7 +196,7 @@ def main(args):
                 dataset_test, num_replicas=num_tasks, rank=global_rank, shuffle=True)  # shuffle=True to reduce monitor bias
         else:
             sampler_test = torch.utils.data.SequentialSampler(dataset_test)
-            
+
 
     if global_rank == 0 and args.log_dir is not None and not args.eval:
         os.makedirs(args.log_dir, exist_ok=True)
@@ -227,8 +227,8 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=False
     )
-    
-    
+
+
     mixup_fn = None
     mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
     if mixup_active:
@@ -237,7 +237,7 @@ def main(args):
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
-    
+
     model = models_vit.__dict__[args.model](
         img_size=args.input_size,
         num_classes=args.nb_classes,
@@ -280,7 +280,7 @@ def main(args):
     print('number of params (M): %.2f' % (n_parameters / 1.e6))
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
-    
+
     if args.lr is None:  # only base_lr is specified
         args.lr = args.blr * eff_batch_size / 256
 
@@ -336,22 +336,22 @@ def main(args):
         val_stats,val_auc_roc = evaluate(data_loader_val, model, device,args.task,epoch, mode='val',num_class=args.nb_classes)
         if max_auc<val_auc_roc:
             max_auc = val_auc_roc
-            
+
             if args.output_dir:
                 misc.save_model(
                     args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                     loss_scaler=loss_scaler, epoch=epoch)
-        
+
 
         if epoch==(args.epochs-1):
             test_stats,auc_roc = evaluate(data_loader_test, model, device,args.task,epoch, mode='test',num_class=args.nb_classes)
 
-        
+
         if log_writer is not None:
             log_writer.add_scalar('perf/val_acc1', val_stats['acc1'], epoch)
             log_writer.add_scalar('perf/val_auc', val_auc_roc, epoch)
             log_writer.add_scalar('perf/val_loss', val_stats['loss'], epoch)
-            
+
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                         'epoch': epoch,
                         'n_parameters': n_parameters}
@@ -362,7 +362,7 @@ def main(args):
             with open(os.path.join(args.output_dir, "log.txt"), mode="a", encoding="utf-8") as f:
                 f.write(json.dumps(log_stats) + "\n")
 
-                
+
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))

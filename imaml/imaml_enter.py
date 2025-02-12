@@ -68,7 +68,10 @@ def train(args, model, dataloader, loader_len):
     with tqdm(dataloader, total=loader_len) as pbar:
 
         for batch_idx, batch in enumerate(pbar):
-            loss_log, dice_log, grad_log = model.outer_loop(batch, is_train=True)
+            if args.net == 'transUNet':
+                loss_log, dice_log, grad_log = model.outer_loop_tranunet(batch, is_train=True)
+            else:
+                loss_log, dice_log, grad_log = model.outer_loop(batch, is_train=True)
 
             loss_list.append(loss_log)
             dice_list.append(dice_log)
@@ -93,7 +96,10 @@ def valid(args, model, dataloader,loader_len):
     dice_list = []
     with tqdm(dataloader, total=loader_len) as pbar:
         for batch_idx, batch in enumerate(pbar):
-            loss_log, dice_log = model.outer_loop(batch, is_train=False)
+            if args.net == 'transUNet':
+                loss_log, dice_log = model.outer_loop_tranunet(batch, is_train=False)
+            else:
+                loss_log, dice_log = model.outer_loop(batch, is_train=False)
 
             loss_list.append(loss_log)
             dice_list.append(dice_log)

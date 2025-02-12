@@ -13,7 +13,7 @@ def dl_enter(args,test_data_ls, meta_epoch=0):
 
     if args.alg == 'meta_test_imaml' or args.alg == 'meta_test_maml':
         meta_epoch =  int(args.load.split('/')[-1].split('_')[-1].replace('.pth', ''))
-    
+
     return trainer(args,test_data_ls, meta_epoch)
 
 
@@ -29,7 +29,7 @@ def trainer(args,test_data_ls, meta_epoch):
     with open(str(metric_dir), 'w') as f:
         fields = ['task_idx', 'epoch', 'train_loss','train_dice', 'val_dice','val_iou','accuracy','f1_score','recall','precision','best_val_dice', 'best_epoch']
         datawrite = csv.writer(f, delimiter=',')
-        datawrite.writerow(fields)  
+        datawrite.writerow(fields)
 
     # 每个epoch内是否验证多次
     # Whether to verify multiple times per dl_epoch
@@ -60,21 +60,26 @@ def trainer(args,test_data_ls, meta_epoch):
 
         # 创建 网络 对象 create object network
         dl_ob = dl_comm(args)
-        if args.alg == 'dl' and args.load != '':
+        # 允许加载预训练参数的方法：
+        allow_method = ['dl', 'transfer', 'pretrain', 'meta_test_imaml', 'meta_test_maml']
+        if args.alg in allow_method and os.path.isfile(args.load):
             dl_ob.net.load_state_dict(torch.load(args.load))
-        if args.alg == 'meta_test_imaml' or args.alg == 'meta_test_maml':
-            dl_ob.net.load_state_dict(torch.load(args.load))
-        elif args.alg == 'pretrain' and args.load != '':
-            dl_ob.net.load_state_dict(torch.load(args.load))
-        elif args.alg == 'imaml' or args.alg == 'maml' or  args.alg=='reptile':
+            print('NOTE:+++++++have load:', args.load)
+        elif args.alg == 'itams' or args.alg == 'mtams' or  args.alg=='reptile':
             # meta的测试 meta test, use dl test strategy
             path = os.path.join(args.store_dir,'save_meta_pth', f'meta_epoch_{meta_epoch}.pth')
-            dl_ob.net.load_state_dict(torch.load(path))
+            if args.net == 'transUNet':
+                dl_ob.net.decoder.load_state_dict(torch.load(path), strict=False)
+                dl_ob.net.transformer.load_state_dict(torch.load(args.meta_learner_load),strict=False)
+            else:     
+                dl_ob.net.load_state_dict(torch.load(path))
+            
+
+            print('NOTE:meta test+++++++have load:', path)
 
         train_loader = sppport_all_task[task_idx]
         val_loader = query_all_task[task_idx]
         test_loader = final_test_task[task_idx]
-
 
         # for val
         best_val = 0.0

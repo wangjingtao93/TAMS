@@ -1,0 +1,6 @@
+# config.yml
+
+# 一些示例参数
+foo: 123
+bar: "nihao"
+baz: true

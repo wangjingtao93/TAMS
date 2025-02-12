@@ -6,9 +6,11 @@ import random
 from tqdm import tqdm
 from torch.utils.data.dataloader import DataLoader
 import cv2
+import torch.nn.functional as F
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 import os
+from torchvision.transforms import Resize
 
 class BV_CNV_MetaDataset(Dataset):
     def __init__(self, args, fileroots, mode='train'):
@@ -19,7 +21,7 @@ class BV_CNV_MetaDataset(Dataset):
             self.relative_path = self.args.synthetic_data_csv.replace('sys.csv', 'imp_net')
         else:
             self.relative_path = self.args.synthetic_data_csv.replace('sys.csv', 'no_imp')
-        
+
         self.transform_train = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             A.HorizontalFlip(p=0.5),
@@ -36,7 +38,7 @@ class BV_CNV_MetaDataset(Dataset):
             #                    always_apply=False, approximate=False, p=0.3),
             ToTensorV2(),
         ])
-        
+
         self.transform_val = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             ToTensorV2(),
@@ -57,7 +59,7 @@ class BV_CNV_MetaDataset(Dataset):
 
         img_list, msk_list = [], []
         for each_path in task:
-            
+
             img_path = os.path.join(self.relative_path, each_path[0])
             mask_path = os.path.join(self.relative_path, each_path[1])
 
@@ -72,7 +74,7 @@ class BV_CNV_MetaDataset(Dataset):
             mask = augmented["mask"] /255 # [h,w]
 
             mask = mask[None] # [c,h,w]
-            
+
             img_list.append(image)
             msk_list.append(mask)
 
@@ -80,7 +82,7 @@ class BV_CNV_MetaDataset(Dataset):
         msk_tensor = torch.stack(msk_list)  # [shot, height, width]
 
         return [img_tensor, msk_tensor]
-    
+
 class BV1000_OCT_CNV(Dataset):
     def __init__(self, args, csv_dir='',fileroots=[], dataframe=None, mode='train'):
         self.args = args
@@ -103,7 +105,7 @@ class BV1000_OCT_CNV(Dataset):
 
 
         print(f'Creating dataset with {len(self.mask_file)} examples')
-        
+
         self.transform_train = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             A.HorizontalFlip(p=0.5),
@@ -120,20 +122,21 @@ class BV1000_OCT_CNV(Dataset):
             #                    always_apply=False, approximate=False, p=0.3),
             ToTensorV2(),
         ])
-        
+
         self.transform_val = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             ToTensorV2(),
         ])
-
+        self.resize = Resize((1024,1024))
 
     def __len__(self):
         return len(self.mask_file)
 
     def __getitem__(self, idx):
+
         image = cv2.imread(self.img_file[idx].replace('/x','/x_d'), 0)
         mask = cv2.imread(self.mask_file[idx], 0)
-    
+
         if  self.mode=='train' and self.args.is_base_agu:
             augmented = self.transform_train(image=image, mask=mask)
         else:
@@ -142,8 +145,15 @@ class BV1000_OCT_CNV(Dataset):
         mask = augmented["mask"] /255
         mask = mask[None]
 
+        # if 'sam' in self.args.net:
+        #     image = self.resize(image)
+        if 'sam' in self.args.net or self.args.net == 'retfound_seg':
+            rgb_tensor = torch.zeros(3, image.shape[1], image.shape[2])
+            rgb_tensor[0, :, :] = image
+            image = rgb_tensor
+
         return {'image': image, 'mask': mask}
-    
+
 class BV1000_OCT_CNV_Sys(Dataset):
     def __init__(self, args, csv_dir='',fileroots=[], dataframe=None, mode='train'):
         self.args = args
@@ -166,7 +176,7 @@ class BV1000_OCT_CNV_Sys(Dataset):
 
 
         print(f'Creating dataset with {len(self.mask_file)} examples')
-        
+
         self.transform_train = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             A.HorizontalFlip(p=0.5),
@@ -183,16 +193,16 @@ class BV1000_OCT_CNV_Sys(Dataset):
             #                    always_apply=False, approximate=False, p=0.3),
             ToTensorV2(),
         ])
-        
+
         self.transform_val = A.Compose([
             A.Resize(width=self.args.dl_resize, height=self.args.dl_resize, p=1.0),
             ToTensorV2(),
         ])
-
+        self.resize = Resize((1024,1024))
 
     def __len__(self):
         return len(self.mask_file)
-    
+
     def toTwoClass(self, mask):
         pixel_value = 5 * 8
         index = np.where(mask != pixel_value)
@@ -205,10 +215,10 @@ class BV1000_OCT_CNV_Sys(Dataset):
         img_path = os.path.join(relative_path, self.img_file[idx])
         mask_path = os.path.join(relative_path, self.mask_file[idx])
         image = cv2.imread(img_path, 0)
+
         mask = cv2.imread(mask_path, 0)
         mask = self.toTwoClass(mask)
 
-        
         if  self.mode=='train' and self.args.is_base_agu:
             augmented = self.transform_train(image=image, mask=mask)
         else:
@@ -216,6 +226,10 @@ class BV1000_OCT_CNV_Sys(Dataset):
         image = augmented["image"] /255.0
         mask = augmented["mask"] /255
         mask = mask[None]
+        if 'sam' in self.args.net or self.args.net == 'retfound_seg':
+            rgb_tensor = torch.zeros(3, image.shape[1], image.shape[2])
+            rgb_tensor[0, :, :] = image
+            image = rgb_tensor
 
         return {'image': image, 'mask': mask}
 

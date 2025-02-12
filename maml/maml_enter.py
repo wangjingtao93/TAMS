@@ -16,7 +16,7 @@ from common.record_result.record_meta_res import RecordMetaResult
 
 
 def maml_enter(args ,train_dataloader_ls, val_dataloader_ls, test_data_ls):
-        
+
     record_res = RecordMetaResult(args)
 
     model = MAML(args)
@@ -31,9 +31,14 @@ def run_epoch(epoch, args, model, train_loader, val_loader, test_data_ls):
     res = OrderedDict()
     print('Epoch {}'.format(epoch))
 
-    train_loss, train_dice, = model.train(train_loader, epoch)
+    if args.net == 'transUNet':
+        train_loss, train_dice, = model.train_transunet(train_loader, epoch)
 
-    val_loss, val_dice = model.val(val_loader, epoch)
+        val_loss, val_dice = model.val_transunet(val_loader, epoch)
+    else:
+        train_loss, train_dice, = model.train(train_loader, epoch)
+
+        val_loss, val_dice = model.val(val_loader, epoch)
 
 
     res['meta_epoch'] = epoch

@@ -77,6 +77,9 @@ def bv1000_oct_cnv(args):
     meta_trainframe = synthetic_dframe[synthetic_dframe['ID'].isin(list(train_df_ori['ID']))]
     meta_valframe = synthetic_dframe[synthetic_dframe['ID'].isin(list(val_df_ori['ID']))]
 
+    meta_trainframe.to_csv('trian_sys.csv')
+    meta_valframe.to_csv('val_sys.csv')
+
 
     all_meta_train_classes = list(meta_trainframe["ID"].unique())
     all_meta_val_classes = list(meta_valframe["ID"].unique())

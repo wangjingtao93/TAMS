@@ -35,10 +35,10 @@ def run_one_image(x, model):
     x = x.to(device, non_blocking=True)
     latent = model.forward_features(x.float())
     latent = torch.squeeze(latent)
-    
+
     return latent
 
-# download pre-trained RETFound 
+# download pre-trained RETFound
 
 device = torch.device('cuda')
 
